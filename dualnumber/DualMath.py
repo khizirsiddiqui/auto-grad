@@ -1,37 +1,33 @@
+from numbers import Number
 from .DualNumber import DualNumber
 import math
 
+def get_clean(x):
+    if isinstance(x, Number):
+        x = DualNumber(x, 0)
+    return x
 
 def sin(x):
-    if isinstance(x, DualNumber):
-        return DualNumber(math.sin(x.a), math.cos(x.a) * x.b)
-    else
-        return math.sin(x)
+    x = get_clean(x)
+    return DualNumber(math.sin(x.a), math.cos(x.a) * x.b)
 
 def cos(x):
-    if isinstance(x, DualNumber):
-        return DualNumber(math.cos(x.a), -1 * math.sin(x.a) * x.b)
-    else
-        return math.cos(x)
+    x = get_clean(x)
+    return DualNumber(math.cos(x.a), -1 * math.sin(x.a) * x.b)
 
 def tan(x):
-    if isinstance(x, DualNumber):
-        return DualNumber(math.tan(x.a), (math.sec(x.a)**2) * x.b)
-    else
-        return math.tan(x)
+    x = get_clean(x)
+    return DualNumber(math.tan(x.a), 1/(math.cos(x.a)**2) * x.b)
 
 def log(x, base=math.e):
-    if isinstance(x, DualNumber):
-        return DualNumber(math.log(x.a, base), x.b / (math.log(base) * x.a))
-    else
-        return math.log(x, base=base)
+    x = get_clean(x)
+    return DualNumber(math.log(x.a, base), x.b / (math.log(base) * x.a))
 
 def exp(x):
-    if isinstance(x, DualNumber):
-        val = math.exp(x.a)
-        return DualNumber(val, val)
-    else
-        return math.tan(x)
+    x = get_clean(x)
+    val = math.exp(x.a)
+    return DualNumber(val, val)
 
 def pow(x, num):
+    x = get_clean(x)
     return x ** num
