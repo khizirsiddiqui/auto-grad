@@ -12,3 +12,9 @@ def derivative(fn, x, args=None):
             fn_args.append(DualNumber(arg, 0))
 
     return fn(*fn_args).b
+
+def gradient(fn, args):
+    grad = []
+    for i, _ in enumerate(args):
+        grad.append(derivative(fn, i, args))
+    return grad
