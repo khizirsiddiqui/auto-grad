@@ -1,1 +1,1 @@
-from .AutoGrad import derivative
+from .AutoGrad import derivative, gradient
