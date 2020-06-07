@@ -47,7 +47,7 @@ def test_exp():
 
 def test_fn_deriv():
     def f(x, y, z):
-        return sin(x ** (y + z)) - 3 * z * log((x ** 2) * (y ** 3))
+        return sin(y ** (x + 1)) - x * y * log((x ** 2) * 3)
 
     g = derivative(f, 1, [0.5, 4, -2.3])
     assert check_deriv(f, 1, [0.5, 4, -2.3], g)
