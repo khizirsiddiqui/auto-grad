@@ -1,14 +1,17 @@
 import numpy as np
 from collections import deque, defaultdict
+import graph.api as graph_fn
+import autograd.grads as gpi
 
 class Node(np.ndarray):
     def __new__(
         subtype, shape, dtype=float, buffer=None, offset=0, strides=None,
         order=None
     ):
-
-        return np.ndarray.__new__(subtype, shape, dtype, buffer, offset,
+        obj = np.ndarray.__new__(subtype, shape, dtype, buffer, offset,
                                   strides, order)
+        obj.grad = None
+        return obj 
 
     def _create_node(self, method, node, name, self_first=True):
         if not isinstance(node, Node):
@@ -57,6 +60,67 @@ class Node(np.ndarray):
     def T(self):
         val = np.transpose(self)
         return Operation.create('transpose', val, self)
+    
+    def correct_grad(self, array: np.ndarray):
+        if self.shape == array.shape:
+            return array
+        
+        my_shape = list(self.shape)
+        ar_shape = list(array.shape)
+
+        if self.ndim != array.ndim:
+            my_shape = [-1] * np.abs(self.shape - array.shape) + self.shape
+        
+        sum_axes = []
+        squeeze_axes = []
+
+        for i, (dim2, dim1) in enumerate(zip(ar_shape, my_shape)):
+            if dim2 != dim1:
+                sum_axes.append(i)
+                if dim1 == -1:
+                    squeeze_axes.append(i)
+        
+        narray = graph_fn.sum(array, axis=tuple(sum_axes), keepdims=True)
+        return graph_fn.squeeze(narray, axis=tuple(squeeze_axes))
+
+    def backward(self):
+        frontier = NodeQueue()
+        future_grads = defaultdict(int)
+        future_grads[self.name] = Constant.create(np.ones(self.shape))
+        frontier.push(self)
+
+        grads = {}
+        
+        while len(frontier):
+            vertex = frontier.pop()
+
+            # Calculate gradient only from operation node.
+            if isinstance(vertex, Variable):
+                vertex.grad = future_grads[vertex.name]
+                grads[vertex.name] = future_grads[vertex.name]
+                continue
+            elif isinstance(vertex, Constant):
+                vertex.grad = graph_fn.constant(0)
+                continue
+            
+            adj = future_grads[vertex.name]
+            op_name = vertex.op_name
+
+            op_grad = getattr(gpi, 'grad_{}'.format(op_name))
+            grad = op_grad(vertex, adj)    # Get grad of operation
+
+            future_grads[vertex.op1.name] = vertex.op1.correct_grad(future_grads[vertex.op1.name] + grad[0])
+            if vertex.op1 not in frontier:
+                frontier.push(vertex.op1)
+            
+            if vertex.op2:
+                future_grads[vertex.op2.name] = vertex.op2.correct_grad(future_grads[vertex.op2.name] + grad[1])
+                if vertex.op2 not in frontier:
+                    frontier.push(vertex.op2)
+
+        self.grad = grads
+        return grads
+
 
 class Operation(Node):
     unknown_nodes = {}
@@ -124,7 +188,7 @@ class NodeQueue:
         self.nodes.append(node)
         self.node_names.append(node.name)
 
-    def pop(self, node):
+    def pop(self):
         self.node_names.popleft()
         return self.nodes.popleft()
 

@@ -17,3 +17,24 @@ def test_api():
     
     z = x ** y
     assert z == 8
+
+def test_grad():
+    x = g.variable(2, name='x')
+    y = g.constant(3)
+    z = x + y
+    grad = z.backward()
+    assert len(grad) == 1
+    assert grad['x'] == 1
+
+    z = x**3 + y**2
+    grad = z.backward()
+    assert len(grad) == 1
+    assert grad['x'] == 12
+    assert False, y.grad
+
+    y = g.variable(1, name='y')
+    z = g.sin(2 * x + y)
+    grad = z.backward()
+    assert len(grad) == 2
+    assert grad['x'] == 2 * g.cos(2 * x + y)
+    assert grad['y'] == g.cos(2 * x + y)
