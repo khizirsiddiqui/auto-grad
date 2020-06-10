@@ -1,5 +1,5 @@
 import numpy as np
-from collections import deque
+from collections import deque, defaultdict
 
 class Node(np.ndarray):
     def __new__(
@@ -14,52 +14,51 @@ class Node(np.ndarray):
         if not isinstance(node, Node):
             node = Constant.create(node)
         val = getattr(np.ndarray, method)(self, node)
-        return Operation.create(name, val, self if self_first else other,
-                                other if self_first else self)
+        return Operation.create(name, val, self if self_first else node,
+                                node if self_first else self)
 
     def __add__(self, node):
-        return self._create_node('__add__', other, 'add')
+        return self._create_node('__add__', node, 'add')
 
     def __radd__(self, node):
-        return self._create_node('__radd__', other, 'add')
+        return self._create_node('__radd__', node, 'add', False)
 
     def __sub__(self, node):
-        return self._create_node('__sub__', other, 'sub')
+        return self._create_node('__sub__', node, 'sub')
 
     def __rsub__(self, node):
-        return self._create_node('__rsub__', other, 'sub', False)
+        return self._create_node('__rsub__', node, 'sub', False)
 
     def __mul__(self, node):
-        return self._create_node('__mul__', other, 'mul')
+        return self._create_node('__mul__', node, 'mul')
 
     def __rmul__(self, node):
-        return self._create_node('__rmul__', other, 'mul', False)
+        return self._create_node('__rmul__', node, 'mul', False)
 
     def __div__(self, node):
-        return self._create_node('__div__', other, 'div')
+        return self._create_node('__div__', node, 'div')
 
     def __rdiv_(self, node):
-        return self._create_node('__rdiv__', other, 'div', False)
+        return self._create_node('__rdiv__', node, 'div', False)
 
     def __truediv__(self, node):
-        return self._create_node('__truediv__', other, 'div')
+        return self._create_node('__truediv__', node, 'div')
 
     def __rtruediv__(self, node):
-        return self._create_node('__rtruediv__', other, 'div', False)
-    
+        return self._create_node('__rtruediv__', node, 'div', False)
+
     def __pow__(self, node):
-        return self._create_node('__pow__', other, 'pow')
-    
+        return self._create_node('__pow__', node, 'pow')
+
     def __rpow__(self, node):
-        return self._create_node('__rpow__', other, 'pow', False)
-    
+        return self._create_node('__rpow__', node, 'pow', False)
+
     @property
     def T(self):
         val = np.transpose(self)
         return Operation.create('transpose', val, self)
 
 class Operation(Node):
-
     unknown_nodes = {}
 
     @staticmethod
@@ -74,7 +73,7 @@ class Operation(Node):
             obj.name = name
         else:
             if op_name not in Operation.unknown_nodes:
-                Operation.unkown_nodes[op_name] = 0
+                Operation.unknown_nodes[op_name] = 0
             nodeID = Operation.unknown_nodes[op_name]
             Operation.unknown_nodes[op_name] += 1
             obj.name = op_name + '_' + str(nodeID)
