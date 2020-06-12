@@ -30,7 +30,6 @@ def test_grad():
     grad = z.backward()
     assert len(grad) == 1
     assert grad['x'] == 12
-    assert False, y.grad
 
     y = g.variable(1, name='y')
     z = g.sin(2 * x + y)

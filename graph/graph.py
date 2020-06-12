@@ -1,7 +1,7 @@
 import numpy as np
 from collections import deque, defaultdict
-import graph.api as graph_fn
-import autograd.grads as gpi
+import autograd.grads as gradFn
+import graph.api as gpi
 
 class Node(np.ndarray):
     def __new__(
@@ -9,9 +9,9 @@ class Node(np.ndarray):
         order=None
     ):
         obj = np.ndarray.__new__(subtype, shape, dtype, buffer, offset,
-                                  strides, order)
+                                 strides, order)
         obj.grad = None
-        return obj 
+        return obj
 
     def _create_node(self, method, node, name, self_first=True):
         if not isinstance(node, Node):
@@ -60,17 +60,17 @@ class Node(np.ndarray):
     def T(self):
         val = np.transpose(self)
         return Operation.create('transpose', val, self)
-    
+
     def correct_grad(self, array: np.ndarray):
         if self.shape == array.shape:
             return array
-        
+
         my_shape = list(self.shape)
         ar_shape = list(array.shape)
 
         if self.ndim != array.ndim:
-            my_shape = [-1] * np.abs(self.shape - array.shape) + self.shape
-        
+            my_shape = [-1] * np.abs(self.ndim - array.ndim) + my_shape
+
         sum_axes = []
         squeeze_axes = []
 
@@ -79,9 +79,9 @@ class Node(np.ndarray):
                 sum_axes.append(i)
                 if dim1 == -1:
                     squeeze_axes.append(i)
-        
-        narray = graph_fn.sum(array, axis=tuple(sum_axes), keepdims=True)
-        return graph_fn.squeeze(narray, axis=tuple(squeeze_axes))
+
+        narray = np.sum(array, axis=tuple(sum_axes), keepdims=True)
+        return np.squeeze(narray, axis=tuple(squeeze_axes))
 
     def backward(self):
         frontier = NodeQueue()
@@ -90,34 +90,35 @@ class Node(np.ndarray):
         frontier.push(self)
 
         grads = {}
-        
-        while len(frontier):
-            vertex = frontier.pop()
 
+        while len(frontier) > 0:
+            vertex = frontier.pop()
             # Calculate gradient only from operation node.
             if isinstance(vertex, Variable):
-                vertex.grad = future_grads[vertex.name]
+                vertex.grad = gpi.constant(future_grads[vertex.name])
                 grads[vertex.name] = future_grads[vertex.name]
                 continue
             elif isinstance(vertex, Constant):
-                vertex.grad = graph_fn.constant(0)
                 continue
-            
+
             adj = future_grads[vertex.name]
             op_name = vertex.op_name
 
-            op_grad = getattr(gpi, 'grad_{}'.format(op_name))
+            op_grad = getattr(gradFn, 'grad_{}'.format(op_name))
             grad = op_grad(vertex, adj)    # Get grad of operation
 
-            future_grads[vertex.op1.name] = vertex.op1.correct_grad(future_grads[vertex.op1.name] + grad[0])
-            if vertex.op1 not in frontier:
+            future_grads[vertex.op1.name] = vertex.op1.correct_grad(
+                future_grads[vertex.op1.name] + grad[0])
+            if vertex.op1 not in frontier and not isinstance(vertex.op1, Constant):
                 frontier.push(vertex.op1)
-            
-            if vertex.op2:
-                future_grads[vertex.op2.name] = vertex.op2.correct_grad(future_grads[vertex.op2.name] + grad[1])
+
+            if vertex.op2 is not None and not isinstance(vertex.op2, Constant):
+                future_grads[vertex.op2.name] = vertex.op2.correct_grad(
+                    future_grads[vertex.op2.name] + grad[1])
                 if vertex.op2 not in frontier:
                     frontier.push(vertex.op2)
-
+        for key in grads.keys():
+            grads[key] = gpi.constant(grads[key])
         self.grad = grads
         return grads
 
@@ -133,15 +134,13 @@ class Operation(Node):
         obj.op1 = op1
         obj.op2 = op2
 
-        if name is not None:
-            obj.name = name
-        else:
+        obj.name = name
+        if obj.name is None:
             if op_name not in Operation.unknown_nodes:
                 Operation.unknown_nodes[op_name] = 0
             nodeID = Operation.unknown_nodes[op_name]
             Operation.unknown_nodes[op_name] += 1
             obj.name = op_name + '_' + str(nodeID)
-
         return obj
 
 
@@ -153,7 +152,7 @@ class Constant(Node):
         if not isinstance(val, np.ndarray):
             val = np.array(val, dtype=float)
         obj = Constant(strides=val.strides, shape=val.shape, dtype=val.dtype,
-                       buffer=np.copy(val))
+                       buffer=val)
         if name is None:
             obj.name = "const_" + str(Constant.unknown_count)
             Constant.unknown_count += 1
@@ -170,13 +169,12 @@ class Variable(Node):
         if not isinstance(val, np.ndarray):
             val = np.array(val, dtype=float)
         obj = Variable(strides=val.strides, shape=val.shape, dtype=val.dtype,
-                       buffer=np.copy(val))
+                       buffer=val)
         if name is None:
-            obj.name = "var_" + str(Constant.unknown_count)
-            Constant.unknown_count += 1
+            obj.name = "var_" + str(Variable.unknown_count)
+            Variable.unknown_count += 1
         else:
             obj.name = name
-
         return obj
 
 class NodeQueue:

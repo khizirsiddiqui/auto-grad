@@ -1,4 +1,4 @@
-import graph.api as gpi
+import graph.api as np
 
 import numpy as np
 
@@ -23,7 +23,7 @@ def grad_div(node, prev_adjoint):
 def grad_pow(node, prev_adjoint):
     return [
         prev_adjoint * node.op2 * (node.op1 ** (node.op2 - 1)),
-        prev_adjoint * node * gpi.log(node.op1)
+        prev_adjoint * node * np.log(node.op1)
     ]
 
 def grad_transpose(node, prev_adjoint):
@@ -42,8 +42,8 @@ def grad_log(node, prev_adjoint):
     return [prev_adjoint * (1. / node.op1), None]
 
 def grad_max(node, prev_adjoint):
-    dop1 = gpi.where(node.op1 == node.with_keepdims, 1, 0)
-    normalizers = gpi.sum(dop1, axis=node.axis, keepdims=True)
+    dop1 = np.where(node.op1 == node.with_keepdims, 1, 0)
+    normalizers = np.sum(dop1, axis=node.axis, keepdims=True)
     normalized_dop1 = dop1 / normalizers
 
     return [prev_adjoint * normalized_dop1, None]
@@ -54,14 +54,14 @@ def grad_dot(node, prev_adjoint):
     op2 = node.op2
 
     if prev_adjoint.ndim * node.op2.ndim == 1:
-        prev_adj = gpi.reshape(prev_adjoint, (-1, 1))
-        op2 = gpi.reshape(op2, (-1, 1))
+        prev_adj = np.reshape(prev_adjoint, (-1, 1))
+        op2 = np.reshape(op2, (-1, 1))
     if prev_adjoint.ndim * node.op1.ndim == 1:
-        prev_adj = gpi.reshape(prev_adjoint, (-1, 1))
-        op1 = gpi.reshape(op1, (-1, 1))
+        prev_adj = np.reshape(prev_adjoint, (-1, 1))
+        op1 = np.reshape(op1, (-1, 1))
     return [
-        gpi.dot(prev_adj, op2.T),
-        gpi.dot(op1.T, prev_adj)
+        np.dot(prev_adj, op2.T),
+        np.dot(op1.T, prev_adj)
     ]
 
 def grad_where(node, prev_adjoint):
@@ -73,27 +73,26 @@ def grad_where(node, prev_adjoint):
 
     return [prev_adjoint * dop1, prev_adjoint * dop2]
 
-
 def grad_sin(node, prev_adjoint):
-    return [prev_adjoint * gpi.cos(node.op1), None]
+    return [prev_adjoint * np.cos(node.op1), None]
 
 def grad_cos(node, prev_adjoint):
-    return [-1 * prev_adjoint * gpi.sin(node.op1), None]
+    return [-1 * prev_adjoint * np.sin(node.op1), None]
 
 def grad_softmax_cross_entropy(node, prev_adjoint):
     return [
-        prev_adjoint * (node.softmax_val - node.labels),
+        prev_adjoint * (node.softmax - node.labels),
         None
     ]
 
 def grad_reshape(node, prev_adjoint):
     return [
-        gpi.reshape(node, prev_adjoint.op1.shape),
+        np.reshape(prev_adjoint, node.op1.shape),
         None
     ]
 
 def grad_squeeze(node, prev_adjoint):
     return [
-        gpi.reshape(node, prev_adjoint.op1.shape),
+        np.reshape(prev_adjoint, node.op1.shape),
         None
     ]

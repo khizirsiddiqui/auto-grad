@@ -51,7 +51,7 @@ def dot(a, b, name=None):
     if not isinstance(b, Node):
         b = Constant.create(b)
     val = np.dot(a, b)
-    return Operation.create('dot', a, b, name=name)
+    return Operation.create('dot', val, a, b, name=name)
 
 def _where(condition, a, b, opname, name=None):
     if not isinstance(a, Node):
@@ -61,7 +61,7 @@ def _where(condition, a, b, opname, name=None):
         b = np.full_like(condition, b)
         b = Constant.create(b)
     val = np.where(condition, a, b)
-    op = Operation.create(opname, a, b, name=name)
+    op = Operation.create(opname, val, a, b, name=name)
     op.condition = condition
     return op
 
@@ -93,7 +93,7 @@ def reshape(array, shape, name=None):
     if not isinstance(array, Node):
         array = Constant.create(array)
     val = np.reshape(array, shape)
-    return OperationalNode.create('reshape', val, array, name=name)
+    return Operation.create('reshape', val, array, name=name)
 
 def squeeze(array, axis=None, name=None):
     if not isinstance(array, Node):
