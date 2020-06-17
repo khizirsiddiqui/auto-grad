@@ -14,7 +14,7 @@ def test_api():
     y = g.constant(3)
     z = x + y
     assert z == 5
-    
+
     z = x ** y
     assert z == 8
 
@@ -30,6 +30,7 @@ def test_grad():
     grad = z.backward()
     assert len(grad) == 1
     assert grad['x'] == 12
+    assert x.grad == 12
 
     y = g.variable(1, name='y')
     z = g.sin(2 * x + y)
