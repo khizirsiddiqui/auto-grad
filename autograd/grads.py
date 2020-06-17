@@ -1,5 +1,3 @@
-import graph.api as np
-
 import numpy as np
 
 def grad_add(node, prev_adjoint):
@@ -72,6 +70,9 @@ def grad_where(node, prev_adjoint):
     dop2[node.condition] = 0
 
     return [prev_adjoint * dop1, prev_adjoint * dop2]
+
+def grad_relu(node, prev_adjoint):
+    return grad_where(node, prev_adjoint)
 
 def grad_sin(node, prev_adjoint):
     return [prev_adjoint * np.cos(node.op1), None]
