@@ -19,7 +19,6 @@ def init_net(layer0, hidden1, num_classes):
 
 def forward_pass(x, weights):
     assert len(weights) == 4
-    assert x.shape[1] == weights[0].shape[0]
     a = gpi.dot(x, weights[0]) + weights[1]
     a = gpi.where(a > 0, a, 0)
     a = gpi.dot(a, weights[2]) + weights[3]
@@ -32,15 +31,18 @@ def main():
     print("Label Binarizing...")
     label_bin = LabelBinarizer()
     X = X / 255
-    X_train, y = shuffle(X, y, random_state=0)
-    y_train = label_bin.fit_transform(y) * 1.
-    training_portion = np.floor(0.8 * len(X)).astype(np.int32)
+    X, y = shuffle(X, y, random_state=0)
+    y = label_bin.fit_transform(y) * 1.
+    train_size = np.floor(0.8 * len(X)).astype(np.int32)
+    X_train, y_train = X[:train_size], y[:train_size]
+    X_test, y_test = X[train_size:], y[train_size:]
     print("Train Set:", len(X_train))
     losses = []
     print("Initializing Weights...")
     weights = init_net(784, 64, 10)
+    print([x.shape for x in weights])
     learning_rate = 1e-2
-    iters = 555550
+    iters = 150
     print("   Learning Rate:", learning_rate)
     print("Total Iterations:", iters)
     print("Starting training...")
@@ -50,7 +52,7 @@ def main():
         y = forward_pass(x, weights)
         loss = gpi.softmax_cross_entropy(y, t)
         losses.append(loss)
-        print("\r[%4d/%4d]: Loss %.3f, Avg. Loss: %.3f" % (i+1, iters, loss,
+        print("\r[%3d/%3d]: Loss %.3f, Avg. Loss: %.3f" % (i+1, iters, loss,
                                                          np.mean(losses)))
 
         grads = loss.backward()
@@ -58,7 +60,12 @@ def main():
         weights[1] = weights[1] - learning_rate * grads['b1']
         weights[2] = weights[2] - learning_rate * grads['l2']
         weights[3] = weights[3] - learning_rate * grads['b2']
-
+    correct = 0
+    for x, t in zip(X_test, y_test):
+        y_logits = forward_pass(x, weights)
+        y = np.argmax(y_logits)
+        correct += (y == np.argmax(t))
+    print("Test Set Accuracy:", correct/len(X_test))
 
 if __name__ == "__main__":
     main()
