@@ -1,8 +1,10 @@
 # Auto-Grad
 
-Python implementation of automatic differentiation.
+Toy Python implementation of automatic differentiation.
 
-*** Under Work ***
+ - Includes both forward and reverse modes of AD.
+ - Example of a 2 layer Neural Network in `examples/simple_nn.py`.
+ - Test coverage of many methods.
 
  See `tests/` for how to use.
 
