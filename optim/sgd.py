@@ -1,11 +1,8 @@
-class SGD:
-    def __init__(self, params, lr=1e-3):
-        self.lr = lr
-        self.params = params
+from .base import Optimizer
 
-    def zero_grad(self):
-        for param in self.params:
-            param.grad = None
+class SGD(Optimizer):
+    def __init__(self, params, lr=1e-3):
+        super().__init__(params, lr)
 
     def step(self):
         for param in self.params:

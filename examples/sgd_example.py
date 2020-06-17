@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelBinarizer
-from optim import SGD
+from optim import SGDMomentum
 
 
 def init_net(layer0, hidden1, num_classes):
@@ -42,7 +42,7 @@ def main():
     print("Initializing Weights...")
     weights = init_net(784, 64, 10)
     iters = 150
-    optimizer = SGD(weights)
+    optimizer = SGDMomentum(weights)
     print("   Learning Rate:", optimizer.lr)
     print("Total Iterations:", iters)
     print("Starting training...")
