@@ -7,7 +7,13 @@ Toy Python implementation of automatic differentiation.
  - Test coverage of many methods.
  - SGD, SGD with Momentum, SGD with Nesterov Momentum avaliable.
 
- See `tests/` and 'examples/' for how to use.
+## Installation
 
- Run `$ python examples/simple_nn.py` to train a 2 layer neural network on MNIST.
+Run: `python setup.py install`
+
+## Examples
+
+See `tests/` and `examples/` for how to use.
+
+Run `$ python examples/simple_nn.py` to train a 2 layer neural network on MNIST.
 
